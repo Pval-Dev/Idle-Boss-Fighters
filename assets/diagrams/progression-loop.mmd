@@ -1,0 +1,29 @@
+flowchart TD
+
+Damage["Damage"]
+
+Boss["Boss"]
+
+Gems["Gems"]
+
+Processor["Processor"]
+
+Money["Money"]
+
+Upgrades["Stats"]
+
+Growth["NPC Scaling"]
+
+Damage --> Boss
+
+Boss --> Gems
+
+Gems --> Processor
+
+Processor --> Money
+
+Money --> Upgrades
+
+Upgrades --> Growth
+
+Growth --> Damage
