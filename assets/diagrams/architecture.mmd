@@ -1,0 +1,19 @@
+flowchart TD
+
+Client["Client Layer"]
+
+Shared["Replication Layer"]
+
+Server["Server Layer"]
+
+World["Runtime Layer"]
+
+Persistence["Persistence Layer"]
+
+Client --> Shared
+
+Shared --> Server
+
+Server --> World
+
+Server --> Persistence
