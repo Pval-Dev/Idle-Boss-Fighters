@@ -1,0 +1,27 @@
+flowchart TD
+
+Join["Player Joined"]
+
+Load["Load Save"]
+
+Deserialize["Deserialize"]
+
+Runtime["Runtime State"]
+
+Autosave["Autosave"]
+
+Serialize["Serialize"]
+
+Datastore["Persistence"]
+
+Join --> Load
+
+Load --> Deserialize
+
+Deserialize --> Runtime
+
+Runtime --> Autosave
+
+Autosave --> Serialize
+
+Serialize --> Datastore
