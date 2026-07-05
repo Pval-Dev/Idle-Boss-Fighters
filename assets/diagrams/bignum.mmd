@@ -1,0 +1,23 @@
+flowchart TD
+
+Input["Value"]
+
+Normalize["Normalize"]
+
+BigNum["Mantissa + Exponent"]
+
+Arithmetic["Operations"]
+
+Formatting["Formatting"]
+
+Serialization["Serialization"]
+
+Input --> Normalize
+
+Normalize --> BigNum
+
+BigNum --> Arithmetic
+
+BigNum --> Formatting
+
+BigNum --> Serialization
