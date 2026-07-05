@@ -1,0 +1,23 @@
+flowchart TD
+
+Entity["Entity"]
+
+Position["Position Validation"]
+
+Radius["Safe Radius"]
+
+Recovery["Recovery Trigger"]
+
+Teleport["Teleport"]
+
+Physics["Velocity Reset"]
+
+Entity --> Position
+
+Position --> Radius
+
+Radius --> Recovery
+
+Recovery --> Teleport
+
+Teleport --> Physics
