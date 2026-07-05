@@ -1,0 +1,31 @@
+flowchart TD
+
+Player["Player"]
+
+PlotManager["PlotManager"]
+
+Template["Plot Template"]
+
+Plot["Assigned Plot"]
+
+NPCs["NPC Runtime"]
+
+Boss["Boss Runtime"]
+
+Processor["Processor"]
+
+Pads["Upgrade Pads"]
+
+Player --> PlotManager
+
+PlotManager --> Template
+
+Template --> Plot
+
+Plot --> NPCs
+
+Plot --> Boss
+
+Plot --> Processor
+
+Plot --> Pads
