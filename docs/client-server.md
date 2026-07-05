@@ -191,30 +191,3 @@ Communication occurs through RemoteEvents and RemoteFunctions.
 Player requests travel from the client to the server.
 
 Server responses update the client presentation layer.
-flowchart TD
-
-Player["Player"]
-
-Client["Client Layer"]
-
-Local["LocalScripts"]
-
-Remote["PlayerRemotes"]
-
-Manager["GameManager"]
-
-Systems["Systems"]
-
-World["World"]
-
-Player --> Client
-
-Client --> Local
-
-Local --> Remote
-
-Remote --> Manager
-
-Manager --> Systems
-
-Systems --> World
