@@ -1,0 +1,29 @@
+flowchart TD
+
+Boss["Boss"]
+
+Drops["Gem Drops"]
+
+Inventory["Backpack"]
+
+Processor["Processor"]
+
+Money["Currency"]
+
+Stats["Upgrades"]
+
+NPC["NPC Growth"]
+
+Boss --> Drops
+
+Drops --> Inventory
+
+Inventory --> Processor
+
+Processor --> Money
+
+Money --> Stats
+
+Stats --> NPC
+
+NPC --> Boss
