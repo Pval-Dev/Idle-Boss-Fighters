@@ -1,0 +1,29 @@
+flowchart TD
+
+GameManager
+
+PlayerData
+
+CombatDirector
+
+AnalyticsService
+
+BigNum
+
+PlotManager
+
+SafeZone
+
+GameManager --> PlayerData
+
+GameManager --> PlotManager
+
+GameManager --> CombatDirector
+
+GameManager --> AnalyticsService
+
+PlayerData --> BigNum
+
+CombatDirector --> BigNum
+
+GameManager --> SafeZone
