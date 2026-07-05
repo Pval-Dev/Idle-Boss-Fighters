@@ -1,8 +1,23 @@
 # Idle Boss Fighters
 
-A modular server-authoritative gameplay architecture focused on persistent progression, scalable economies, runtime ownership and deterministic combat systems.
+> Modular runtime architecture for persistent progression, isolated world ownership and scalable combat systems.
 
-Idle Boss Fighters was designed as a technical exploration of long-term progression systems, world instancing, combat orchestration and player persistence.
+Idle Boss Fighters is a technical portfolio project focused on gameplay orchestration, persistence design, runtime simulation and infinite economy systems.
+
+---
+
+# Project Goals
+
+This project was designed to explore software engineering concepts frequently found in persistent online experiences.
+
+Primary objectives:
+
+- Design a server-authoritative gameplay architecture
+- Implement isolated runtime ownership models
+- Support infinite numerical progression
+- Create fault tolerant runtime systems
+- Build deterministic combat orchestration
+- Develop persistent player progression pipelines
 
 ---
 
@@ -10,14 +25,14 @@ Idle Boss Fighters was designed as a technical exploration of long-term progress
 
 Idle Boss Fighters is an incremental combat experience built around isolated player environments, persistent progression and modular gameplay services.
 
-The project explores several software engineering concepts commonly found in large-scale interactive systems.
+The project explores several engineering concepts commonly found in large-scale interactive systems.
 
 Examples include:
 
 - Server-authoritative gameplay
 - Runtime ownership models
 - Modular architecture
-- Persistent player progression
+- Persistent progression
 - Infinite scaling systems
 - Combat orchestration
 - Reward pipelines
@@ -29,14 +44,15 @@ Examples include:
 # Technical Highlights
 
 - Server-authoritative architecture
-- Modular gameplay services
-- Persistent progression systems
 - Runtime world instancing
-- Data-driven configuration
-- Infinite economy scaling
-- Fault tolerant runtime systems
-- Bidirectional client-server communication
-- State driven combat design
+- Persistent progression systems
+- Infinite numerical scaling
+- Data-driven balancing
+- Combat state orchestration
+- Modular gameplay services
+- Fault tolerant recovery systems
+- Analytics and telemetry collection
+- Ownership-based world simulation
 
 ---
 
@@ -64,21 +80,29 @@ Server --> World
 Server --> Persistence
 ```
 
+Additional architectural diagrams are available inside:
+
+```text
+diagrams/
+```
+
 ---
 
 # Core Systems
 
-| System | Responsibility | Technical Value |
-|--------|----------------|-----------------|
-| GameManager | Coordinates runtime systems and progression | Central orchestration |
-| CombatDirector | Controls combat states and combat flow | Stateful simulation |
-| GameLoop | Handles recurring gameplay execution | Runtime coordination |
-| PlayerData | Stores persistent progression | Persistence model |
-| BigNum | Supports indefinite scaling | Numerical abstraction |
-| QuestService | Handles progression objectives | Retention mechanics |
-| DealerSystem | Controls cosmetic rotation | Reward systems |
-| NPCHandler | Maintains world entities | Runtime management |
-| AnalyticsService | Tracks gameplay metrics | Product validation |
+| Category | System | Responsibility | Technical Value |
+|----------|--------|----------------|-----------------|
+| Core | GameManager | Runtime orchestration | Lifecycle management |
+| Core | CombatDirector | Combat state machine | Stateful simulation |
+| Core | GameLoop | Continuous gameplay execution | Runtime coordination |
+| Data | PlayerData | Persistent player model | Persistence design |
+| Data | Config | Data-driven balancing | System configuration |
+| Economy | BigNum | Infinite progression support | Numerical abstraction |
+| Services | QuestService | Progression objectives | Retention mechanics |
+| Services | DealerSystem | Cosmetic rotation | Reward systems |
+| Services | AnalyticsService | Product telemetry | Market validation |
+| Runtime | PlotManager | World ownership | Instance allocation |
+| Runtime | SafeZone | Entity recovery | Fault tolerance |
 
 ---
 
@@ -116,55 +140,70 @@ Power --> Combat
 
 # Runtime Architecture
 
-Each player owns an isolated gameplay environment.
+The project adopts a player-owned runtime model where each user receives an isolated simulation environment.
 
-Dedicated runtime instances contain:
+Each runtime instance contains:
 
-- NPC team
-- Boss entity
-- Progression systems
-- Reward generation
+- NPC squad
+- Boss controller
+- Economy systems
 - Upgrade systems
-- Cosmetic systems
-- Runtime references
+- Cosmetic services
+- Analytics hooks
+- Persistence references
 
-This approach simplifies ownership boundaries, persistence and world synchronization.
+This architecture reduces synchronization complexity and simplifies ownership validation.
 
 ---
 
-# Networking Principles
+# Design Principles
 
-Idle Boss Fighters follows several architectural principles.
-
-### Server Authority
+## Server Authority
 
 Critical gameplay decisions remain server-side.
 
 Examples:
 
 - Combat
+- Progression
 - Rewards
 - Purchases
-- Progression
+- Persistence
 - Save operations
 
 ---
 
-### Separation of Responsibilities
+## Separation of Concerns
 
 Systems remain isolated according to their domain.
 
 Examples:
 
 - CombatDirector
-- QuestService
+- PlayerData
 - DealerSystem
+- QuestService
 - AnalyticsService
 - BigNum
 
 ---
 
-### Fault Tolerance
+## Ownership Model
+
+Gameplay environments are dynamically assigned through runtime plot allocation.
+
+Ownership determines:
+
+- Reward distribution
+- Entity references
+- Progression scope
+- Persistence boundaries
+- Runtime recovery
+- Validation rules
+
+---
+
+## Fault Tolerance
 
 Recovery systems exist to mitigate runtime anomalies.
 
@@ -173,11 +212,12 @@ Examples:
 - SafeZone
 - NPC validation
 - Position correction
-- Runtime recovery
+- Runtime reconstruction
+- Physics stabilization
 
 ---
 
-### Infinite Scalability
+## Infinite Progression
 
 Progression systems support indefinite growth.
 
@@ -187,14 +227,39 @@ Examples:
 - Config-driven balancing
 - Multipliers
 - Upgrade systems
+- Scaling formulas
+
+---
+
+# Selected Implementations
+
+Representative implementations can be found inside:
+
+```text
+code-samples/
+```
+
+Included samples:
+
+- GameManager.sample.lua
+- PlayerData.sample.lua
+- CombatDirector.sample.lua
+- BigNum.sample.lua
+- PlotManager.sample.lua
+- AnalyticsService.sample.lua
+- SafeZone.sample.lua
 
 ---
 
 # Documentation
 
-Detailed documentation can be found inside the `docs/` directory.
+Detailed documentation is available under:
 
-Available documents:
+```text
+docs/
+```
+
+Included references:
 
 - architecture.md
 - client-server.md
@@ -202,6 +267,45 @@ Available documents:
 - economy-system.md
 - plot-system.md
 - module-responsibilities.md
+
+Architectural diagrams are available inside:
+
+```text
+diagrams/
+```
+
+---
+
+# Screenshots
+
+Work in progress.
+
+Representative captures will include:
+
+- Runtime plots
+- Combat encounters
+- Upgrade systems
+- Economy interfaces
+- Dealers
+- Analytics systems
+- Progression screens
+
+---
+
+# Engineering Lessons
+
+This project explored several engineering challenges.
+
+Examples include:
+
+- Persistent state evolution
+- Runtime ownership validation
+- Numerical scaling limitations
+- Fault recovery mechanisms
+- Combat state coordination
+- Service decomposition
+- Data migration strategies
+- Long-term progression design
 
 ---
 
@@ -218,32 +322,57 @@ docs/
 ├── combat-system.md
 ├── economy-system.md
 ├── plot-system.md
-└── module-responsibilities.md
+├── module-responsibilities.md
 
 code-samples/
 ├── GameManager.sample.lua
+├── PlayerData.sample.lua
 ├── CombatDirector.sample.lua
 ├── BigNum.sample.lua
-└── PlayerData.sample.lua
+├── PlotManager.sample.lua
+├── AnalyticsService.sample.lua
+└── SafeZone.sample.lua
+
+diagrams/
+├── architecture.mmd
+├── client-server.mmd
+├── economy-loop.mmd
+├── combat-system.mmd
+├── plot-system.mmd
+├── persistence.mmd
+├── analytics.mmd
+├── progression-loop.mmd
 
 assets/
-├── screenshots/
-└── diagrams/
+└── screenshots/
 ```
 
 ---
 
-# Engineering Focus
+# Future Work
 
-This repository was created as a technical case study demonstrating:
+Potential future iterations include:
+
+- Event-driven combat systems
+- ECS-inspired entity handling
+- Distributed analytics aggregation
+- Automated balancing tools
+- Runtime diagnostics
+- Gameplay instrumentation
+
+---
+
+# Portfolio Relevance
+
+This repository demonstrates practical experience in:
 
 - Software architecture
-- Gameplay systems engineering
 - Runtime simulation
-- Persistence design
-- Modular services
-- Economy design
-- Combat orchestration
-- Distributed ownership models
-- Data-driven systems
-- Scalable progression
+- Persistence systems
+- Gameplay engineering
+- Numerical abstractions
+- Fault tolerant systems
+- Service-oriented design
+- Data-driven balancing
+- Ownership models
+- Scalable progression systems
