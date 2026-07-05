@@ -1,0 +1,27 @@
+flowchart TD
+
+Player["Player"]
+
+UI["UI Layer"]
+
+Local["LocalScripts"]
+
+Remotes["Remote Events"]
+
+GameManager["GameManager"]
+
+Systems["Gameplay Systems"]
+
+Runtime["World Runtime"]
+
+Player --> UI
+
+UI --> Local
+
+Local --> Remotes
+
+Remotes --> GameManager
+
+GameManager --> Systems
+
+Systems --> Runtime
