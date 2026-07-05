@@ -1,0 +1,25 @@
+flowchart TD
+
+Shield["Shield Phase"]
+
+Core["Core Phase"]
+
+Combos["Dual / Triple Combos"]
+
+BossTurn["Boss Turn"]
+
+Restore["Shield Recovery"]
+
+Victory["Boss Defeated"]
+
+Shield --> Core
+
+Core --> Combos
+
+Combos --> BossTurn
+
+BossTurn --> Restore
+
+Restore --> Shield
+
+Core --> Victory
