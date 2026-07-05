@@ -1,0 +1,23 @@
+flowchart TD
+
+Join["Player Joined"]
+
+Session["Active Session"]
+
+Metrics["Metrics"]
+
+Storage["Analytics Store"]
+
+Queries["Analytics Queries"]
+
+Leave["Player Leaving"]
+
+Join --> Session
+
+Session --> Metrics
+
+Metrics --> Storage
+
+Storage --> Queries
+
+Session --> Leave
