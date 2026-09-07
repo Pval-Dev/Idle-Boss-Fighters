@@ -1,420 +1,275 @@
 # Idle Boss Fighters
 
-> Modular runtime architecture for persistent progression, isolated world ownership and scalable combat systems.
+> Server-authoritative Roblox auto-battler focused on persistent progression, per-player runtime ownership, large-number economy systems, and combat orchestration.
 
-Idle Boss Fighters is a technical portfolio project focused on gameplay orchestration, persistence design, runtime simulation and infinite economy systems.
+Idle Boss Fighters is a completed Roblox/Luau portfolio project built around an incremental combat loop: a player-owned NPC team fights bosses, earns resources, processes those resources into currency, and reinvests that currency into permanent progression.
 
----
-
-# Project Goals
-
-This project was designed to explore software engineering concepts frequently found in persistent online experiences.
-
-Primary objectives:
-
-- Design a server-authoritative gameplay architecture
-- Implement isolated runtime ownership models
-- Support infinite numerical progression
-- Create fault tolerant runtime systems
-- Build deterministic combat orchestration
-- Develop persistent player progression pipelines
+This repository is a **curated technical portfolio**, not a full Roblox place export. It contains representative Luau code, architecture documentation, Mermaid diagrams, and screenshots that explain the systems behind the project.
 
 ---
 
-# Overview
+## Engineering Highlights
 
-Idle Boss Fighters is an incremental combat experience built around isolated player environments, persistent progression and modular gameplay services.
-
-The project explores several engineering concepts commonly found in large-scale interactive systems.
-
-Examples include:
-
-- Server-authoritative gameplay
-- Runtime ownership models
-- Modular architecture
-- Persistent progression
-- Infinite scaling systems
-- Combat orchestration
-- Reward pipelines
-- Fault tolerance mechanisms
-- Data-driven balancing
+- **Server-authoritative progression** for combat, rewards, purchases, and persistent state.
+- **Per-player plot ownership** using explicit runtime ownership metadata.
+- **State-driven combat orchestration** with shield/core boss phases, turn coordination, combos, and timeout handling.
+- **Extended-range numeric model** (`BigNum`) based on mantissa/exponent representation for incremental values beyond normal floating-point magnitude.
+- **Persistent player profiles** with serialization, DataStore-backed saves, save throttling, offline progression, and backward-compatible defaults.
+- **Defensive runtime recovery** for missing entities and physics-related position errors.
+- **Data-driven balancing** through centralized configuration and progression formulas.
+- **Session telemetry** stored separately from gameplay progression data.
 
 ---
 
-# Technical Highlights
+## Core Gameplay Loop
 
-- Server-authoritative architecture
-- Runtime world instancing
-- Persistent progression systems
-- Infinite numerical scaling
-- Data-driven balancing
-- Combat state orchestration
-- Modular gameplay services
-- Fault tolerant recovery systems
-- Analytics and telemetry collection
-- Ownership-based world simulation
+```mermaid
+flowchart LR
+    Combat["Boss combat"] --> Rewards["Gem rewards"]
+    Rewards --> Processor["Resource processing"]
+    Processor --> Currency["Money"]
+    Currency --> Upgrades["Permanent upgrades"]
+    Upgrades --> Power["Team power"]
+    Power --> Combat
+```
+
+The game is intentionally systems-driven rather than input-heavy. Progress comes from managing the economy and improving a persistent combat team.
 
 ---
 
-# Architecture
+## Architecture
 
 ```mermaid
 flowchart TD
+    Client["Client UI / LocalScripts"]
+    Remote["RemoteEvents / RemoteFunctions"]
+    Server["Server orchestration & services"]
+    Runtime["Per-player plot runtime"]
+    Persistence["DataStore-backed persistence"]
 
-Client["Client Layer"]
-
-Network["Communication Layer"]
-
-Server["Gameplay Systems"]
-
-World["Runtime World"]
-
-Persistence["Persistence Layer"]
-
-Client --> Network
-
-Network --> Server
-
-Server --> World
-
-Server --> Persistence
+    Client --> Remote
+    Remote --> Server
+    Server --> Runtime
+    Server --> Persistence
 ```
 
-Additional architectural diagrams are available inside:
+### Client
+
+The client handles presentation, input, UI state, effects, and local feedback.
+
+### Server
+
+The server owns authoritative combat, progression, reward, purchase, quest, and persistence operations. Client requests cross a RemoteEvent/RemoteFunction boundary before server-side systems modify gameplay state.
+
+### Runtime ownership
+
+Players are assigned one of the available plots in `workspace.Plots`. A plot records its owner through attributes and becomes the boundary for that player's boss, NPCs, processor, upgrade stations, and other runtime references.
+
+This is **plot allocation**, not separate Roblox server instancing: server capacity is bounded by the number of configured plots.
+
+### Persistence
+
+`PlayerData` models the persistent player profile. Runtime values are serialized into DataStore-safe structures, while `GameManager` coordinates loading, saving, save throttling, and shutdown persistence.
+
+---
+
+## Combat Model
+
+Combat is coordinated by `CombatDirector` and progresses through explicit states:
 
 ```text
-diagrams/
+Shield phase
+   ↓
+Core phase
+   ↓
+Victory / defeat / timeout
+   ↓
+Reset / next boss
 ```
 
----
+Turn order and state transitions are explicit, while selected mechanics such as target choice, shield formation, and combo activation use probability. The system is therefore **state-driven, not fully deterministic**.
 
-# Core Systems
-
-| Category | System | Responsibility | Technical Value |
-|----------|--------|----------------|-----------------|
-| Core | GameManager | Runtime orchestration | Lifecycle management |
-| Core | CombatDirector | Combat state machine | Stateful simulation |
-| Core | GameLoop | Continuous gameplay execution | Runtime coordination |
-| Data | PlayerData | Persistent player model | Persistence design |
-| Data | Config | Data-driven balancing | System configuration |
-| Economy | BigNum | Infinite progression support | Numerical abstraction |
-| Services | QuestService | Progression objectives | Retention mechanics |
-| Services | DealerSystem | Cosmetic rotation | Reward systems |
-| Services | AnalyticsService | Product telemetry | Market validation |
-| Runtime | PlotManager | World ownership | Instance allocation |
-| Runtime | SafeZone | Entity recovery | Fault tolerance |
+Representative sample: [`CombatDirector.sample.lua`](code-samples/CombatDirector.sample.lua)
 
 ---
 
-# Gameplay Loop
+## Large-Number Progression
 
-```mermaid
-flowchart TD
-
-Combat["Combat"]
-
-Rewards["Rewards"]
-
-Resources["Resources"]
-
-Economy["Economy"]
-
-Progression["Progression"]
-
-Power["Power"]
-
-Combat --> Rewards
-
-Rewards --> Resources
-
-Resources --> Economy
-
-Economy --> Progression
-
-Progression --> Power
-
-Power --> Combat
-```
-
----
-
-# Runtime Architecture
-
-The project adopts a player-owned runtime model where each user receives an isolated simulation environment.
-
-Each runtime instance contains:
-
-- NPC squad
-- Boss controller
-- Economy systems
-- Upgrade systems
-- Cosmetic services
-- Analytics hooks
-- Persistence references
-
-This architecture reduces synchronization complexity and simplifies ownership validation.
-
----
-
-# Design Principles
-
-## Server Authority
-
-Critical gameplay decisions remain server-side.
-
-Examples:
-
-- Combat
-- Progression
-- Rewards
-- Purchases
-- Persistence
-- Save operations
-
----
-
-## Separation of Concerns
-
-Systems remain isolated according to their domain.
-
-Examples:
-
-- CombatDirector
-- PlayerData
-- DealerSystem
-- QuestService
-- AnalyticsService
-- BigNum
-
----
-
-## Ownership Model
-
-Gameplay environments are dynamically assigned through runtime plot allocation.
-
-Ownership determines:
-
-- Reward distribution
-- Entity references
-- Progression scope
-- Persistence boundaries
-- Runtime recovery
-- Validation rules
-
----
-
-## Fault Tolerance
-
-Recovery systems exist to mitigate runtime anomalies.
-
-Examples:
-
-- SafeZone
-- NPC validation
-- Position correction
-- Runtime reconstruction
-- Physics stabilization
-
----
-
-## Infinite Progression
-
-Progression systems support indefinite growth.
-
-Examples:
-
-- BigNum
-- Config-driven balancing
-- Multipliers
-- Upgrade systems
-- Scaling formulas
-
----
-
-# Selected Implementations
-
-Representative implementations can be found inside:
+The economy uses a custom `BigNum` representation:
 
 ```text
-code-samples/
+value = mantissa × 10^exponent
 ```
 
-Included samples:
+This lets progression values exceed the magnitude that can be represented directly as ordinary Roblox numbers.
 
-- GameManager.sample.lua
-- PlayerData.sample.lua
-- CombatDirector.sample.lua
-- BigNum.sample.lua
-- PlotManager.sample.lua
-- AnalyticsService.sample.lua
-- SafeZone.sample.lua
+The implementation is optimized for the project's non-negative incremental economy. It is **not an arbitrary-precision mathematics library**: it deliberately discards insignificant values across large exponent gaps and uses native floating-point mantissas.
+
+Representative sample: [`BigNum.sample.lua`](code-samples/BigNum.sample.lua)
 
 ---
 
-# Documentation
+## Persistence and Profile Evolution
 
-Detailed documentation is available under:
+The player profile includes:
 
-```text
-docs/
-```
+- currency and processing queues;
+- combat and upgrade statistics;
+- boss progression;
+- skins and auras;
+- quests and titles;
+- boosts and gamepasses;
+- tutorial state;
+- offline progression inputs.
 
-Included references:
+Deserialization fills missing fields with defaults so older records can continue to load as the profile shape evolves.
 
-- architecture.md
-- client-server.md
-- combat-system.md
-- economy-system.md
-- plot-system.md
-- module-responsibilities.md
+Representative samples:
 
-Architectural diagrams are available inside:
-
-```text
-diagrams/
-```
+- [`PlayerData.sample.lua`](code-samples/PlayerData.sample.lua)
+- [`GameManager.sample.lua`](code-samples/GameManager.sample.lua)
 
 ---
 
-# Screenshots
+## Runtime Recovery
 
-### Runtime Environment
+Two defensive mechanisms are represented in the samples:
 
-Player-owned isolated simulation environment containing combat systems, progression mechanics and persistent runtime references.
+- `GameManager` periodically verifies critical NPC/boss references and recreates missing runtime entities.
+- `SafeZone` checks whether combat models move outside the expected plot area and repositions them while clearing accumulated physics velocity.
 
-![Runtime Environment](assets/screenshots/runtime-plot.png)
+These mechanisms improve runtime resilience, but they are intentionally described as **recovery guards**, not general distributed fault-tolerance guarantees.
 
----
-
-### Combat Runtime
-
-State-driven combat execution showcasing NPC coordination, visual effects and runtime combat orchestration.
-
-![Combat Runtime](assets/screenshots/combat-runtime.png)
+Representative sample: [`SafeZone.sample.lua`](code-samples/SafeZone.sample.lua)
 
 ---
 
-### Economy Pipeline
+## Selected Code Samples
 
-Resource generation, processing systems and progression mechanics.
+| Sample | What it demonstrates |
+|---|---|
+| [`GameManager.sample.lua`](code-samples/GameManager.sample.lua) | Player lifecycle, DataStore load/save, save throttling, battle loops, runtime recovery, remote boundaries |
+| [`PlayerData.sample.lua`](code-samples/PlayerData.sample.lua) | Persistent profile model, economy state, upgrades, serialization, compatibility defaults, offline progression |
+| [`CombatDirector.sample.lua`](code-samples/CombatDirector.sample.lua) | State-driven combat flow, probabilistic targeting/combos, shield/core phases, timeout resolution |
+| [`BigNum.sample.lua`](code-samples/BigNum.sample.lua) | Mantissa/exponent arithmetic, comparisons, serialization, formatting |
+| [`PlotManager.sample.lua`](code-samples/PlotManager.sample.lua) | Plot allocation, owner lookup, spatial ownership resolution, cleanup |
+| [`AnalyticsService.sample.lua`](code-samples/AnalyticsService.sample.lua) | Session tracking, bounded history, persistent telemetry |
+| [`SafeZone.sample.lua`](code-samples/SafeZone.sample.lua) | Position validation and physics recovery |
 
-![Economy System](assets/screenshots/economy-system.png)
+The samples are intentionally incomplete and reference modules/assets that are not included in this portfolio repository.
 
 ---
 
-### Progression Systems
+## Screenshots
 
-Upgradeable statistics supporting long-term progression and infinite scaling.
+### Player Runtime
 
-![Progression](assets/screenshots/economy2.png)
+![Player runtime](assets/screenshots/runtime-plot.png)
 
----
+### Combat
 
-### Cosmetic Services
+![Combat runtime](assets/screenshots/combat-runtime.png)
 
-Dealer interfaces used for cosmetic acquisition and progression rewards.
+### Economy and Processing
+
+![Economy system](assets/screenshots/economy-system.png)
+
+### Progression
+
+![Progression systems](assets/screenshots/economy2.png)
+
+### Cosmetic Dealers
 
 ![Dealers](assets/screenshots/dealers.png)
 
----
-
-### Analytics
-
-Session tracking, player metrics and persistence validation used for gameplay analysis.
+### Session Analytics
 
 ![Analytics](assets/screenshots/analytics.png)
 
----
+### Project Structure
 
-### Project Architecture
-
-Explorer hierarchy showcasing the modular organization of services, systems, helpers, data models and runtime components.
-
-![Architecture](assets/screenshots/explorer.png)
+![Roblox Studio explorer](assets/screenshots/explorer.png)
 
 ---
 
-# Engineering Lessons
+## Documentation
 
-This project explored several engineering challenges.
+| Document | Focus |
+|---|---|
+| [`docs/architecture.md`](docs/architecture.md) | System boundaries, orchestration, persistence, and architectural trade-offs |
+| [`docs/client-server.md`](docs/client-server.md) | Authority boundaries and remote communication |
+| [`docs/combat-system.md`](docs/combat-system.md) | Combat states, randomness, turn coordination, and result resolution |
+| [`docs/economy-system.md`](docs/economy-system.md) | Resource loop, BigNum model, upgrades, and persistence |
+| [`docs/plot-system.md`](docs/plot-system.md) | Plot allocation, ownership, runtime capacity, and recovery |
+| [`docs/module-responsibilities.md`](docs/module-responsibilities.md) | Responsibility map for the main systems |
 
-Examples include:
-
-- Persistent state evolution
-- Runtime ownership validation
-- Numerical scaling limitations
-- Fault recovery mechanisms
-- Combat state coordination
-- Service decomposition
-- Data migration strategies
-- Long-term progression design
+Editable Mermaid sources are under [`assets/diagrams/`](assets/diagrams/).
 
 ---
 
-# Repository Structure
+## Repository Structure
 
 ```text
-idle-boss-fighters/
-
-README.md
-
-docs/
-├── architecture.md
-├── client-server.md
-├── combat-system.md
-├── economy-system.md
-├── plot-system.md
-├── module-responsibilities.md
-
-code-samples/
-├── GameManager.sample.lua
-├── PlayerData.sample.lua
-├── CombatDirector.sample.lua
-├── BigNum.sample.lua
-├── PlotManager.sample.lua
-├── AnalyticsService.sample.lua
-└── SafeZone.sample.lua
-
-diagrams/
-├── architecture.mmd
-├── client-server.mmd
-├── economy-loop.mmd
-├── combat-system.mmd
-├── plot-system.mmd
-├── persistence.mmd
-├── analytics.mmd
-├── progression-loop.mmd
-
-assets/
-└── screenshots/
+Idle-Boss-Fighters/
+├── README.md
+├── code-samples/
+│   ├── AnalyticsService.sample.lua
+│   ├── BigNum.sample.lua
+│   ├── CombatDirector.sample.lua
+│   ├── GameManager.sample.lua
+│   ├── PlayerData.sample.lua
+│   ├── PlotManager.sample.lua
+│   └── SafeZone.sample.lua
+├── docs/
+│   ├── README.md
+│   ├── architecture.md
+│   ├── client-server.md
+│   ├── combat-system.md
+│   ├── economy-system.md
+│   ├── module-responsibilities.md
+│   └── plot-system.md
+└── assets/
+    ├── diagrams/
+    └── screenshots/
 ```
 
 ---
 
-# Future Work
+## Design Trade-offs and Limitations
 
-Potential future iterations include:
+This project was built as a Roblox game, not as distributed backend infrastructure. Important boundaries include:
 
-- Event-driven combat systems
-- ECS-inspired entity handling
-- Distributed analytics aggregation
-- Automated balancing tools
-- Runtime diagnostics
-- Gameplay instrumentation
+- `GameManager` is a central coordinator and therefore a deliberate coupling point.
+- Plot capacity is bounded by the preconfigured plots available in each server.
+- Persistence depends on Roblox `DataStoreService`; the repository does not include a dedicated automated test suite for persistence failure scenarios.
+- Runtime recovery loops repair known entity/physics problems but do not provide general fault tolerance.
+- Combat contains random mechanics, so battle sequences are not deterministic.
+- `BigNum` extends numeric range for incremental progression but does not provide arbitrary precision.
+- The repository contains curated code excerpts rather than a standalone buildable Roblox place.
+
+These constraints are part of the portfolio documentation because they describe the actual engineering boundaries of the implementation.
 
 ---
 
-# Portfolio Relevance
+## Project Status
 
-This repository demonstrates practical experience in:
+**Completed / archived portfolio project.**
 
-- Software architecture
-- Runtime simulation
-- Persistence systems
-- Gameplay engineering
-- Numerical abstractions
-- Fault tolerant systems
-- Service-oriented design
-- Data-driven balancing
-- Ownership models
-- Scalable progression systems
+The game reached a playable release state and is no longer under active feature development. The repository is maintained as a technical record of the architecture, gameplay systems, persistence model, and engineering lessons from the project.
+
+---
+
+## Tech Stack
+
+```text
+Platform: Roblox
+Language: Luau
+Persistence: Roblox DataStoreService
+Networking: RemoteEvents / RemoteFunctions
+Runtime: Roblox server/client model
+Documentation: Markdown + Mermaid
+```
+
+## Author
+
+Developed by **Pval-Dev**.

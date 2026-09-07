@@ -1,274 +1,88 @@
 # Client-Server Architecture
 
-Idle Boss Fighters follows a server-authoritative architecture designed around separation of responsibilities, maintainability, scalability and runtime consistency.
-
-The client operates primarily as a presentation and interaction layer, while gameplay state ownership remains entirely server-side.
-
-Critical systems such as progression, combat, persistence and reward distribution are executed and validated by the server.
+Idle Boss Fighters treats the Roblox server as the authority for persistent progression and combat outcomes, while clients focus on interaction and presentation.
 
 ---
 
-# Communication Architecture
+## Communication Flow
 
 ```mermaid
-flowchart TD
-
-Player["Player"]
-
-UI["Presentation Layer"]
-
-Local["Client Controllers"]
-
-Remote["Communication Layer"]
-
-GameManager["Orchestration Layer"]
-
-Systems["Gameplay Systems"]
-
-Persistence["Persistence Layer"]
-
-World["Runtime World"]
-
-Player --> UI
-
-UI --> Local
-
-Local --> Remote
-
-Remote --> GameManager
-
-GameManager --> Systems
-
-Systems --> World
-
-GameManager --> Persistence
+flowchart LR
+    Player --> UI["Client UI"]
+    UI --> Local["LocalScripts"]
+    Local --> Remote["RemoteEvents / RemoteFunctions"]
+    Remote --> Server["Server handlers"]
+    Server --> Systems["Gameplay systems"]
+    Systems --> Runtime["Player plot / profile"]
 ```
 
----
+## Client Responsibilities
 
-# Client Responsibilities
+Client-side code handles concerns such as:
 
-The client layer is responsible for user interaction, presentation and local visual feedback.
+- input and interface interaction;
+- HUD, inventory, quest, cosmetic, and tutorial presentation;
+- notifications;
+- local audio/visual feedback;
+- camera and control effects.
 
-Examples include:
+Clients may request operations, but they are not the source of truth for persistent economy or combat state.
 
-- HUD rendering
-- Inventory interfaces
-- Cosmetic interfaces
-- Quest interfaces
-- Tutorials
-- Notifications
-- Audio feedback
-- Camera effects
-- Visual indicators
+## Server Responsibilities
 
-Representative client-side controllers include:
+Server-side systems are responsible for authoritative changes such as:
 
-- ArenaClient
-- BoostHUD
-- GemNotificationListener
-- Donation
-- DeathScreen
-- LockControls
-- Tutorial
-- Inventory Interfaces
+- combat calculations and battle progression;
+- currency and reward changes;
+- upgrade and purchase handling;
+- quest progression;
+- inventory/cosmetic ownership;
+- profile persistence;
+- plot ownership and runtime entity management.
 
-Responsibilities:
+## Remote Boundary
 
-- Collect player input
-- Present gameplay information
-- Trigger gameplay requests
-- Receive server updates
-- Display visual feedback
-- Handle local presentation concerns
+`RemoteEvents` are used for asynchronous client/server messages. `RemoteFunctions` are used when a client needs a synchronous response.
 
-The client does not own gameplay authority.
+The important architectural rule is not the transport itself, but the trust boundary:
 
----
+```text
+client request ≠ authorized state change
+```
 
-# Shared Resources Layer
+The server resolves the requesting player, loads the corresponding runtime/profile state, validates the requested operation, and only then mutates authoritative data.
 
-Shared resources are centralized inside ReplicatedStorage.
+## Server Authority: What It Does and Does Not Mean
 
-Main categories include:
+Keeping progression authority on the server reduces common client-tampering risks because the client cannot simply declare a new balance, reward, or combat result.
 
-- Communication channels
-- Shared assets
-- Runtime templates
-- Visual effects
-- Cosmetic resources
-- Interactive objects
+It does **not** make the game automatically exploit-proof. Every exposed remote still needs input validation, ownership checks, rate/abuse considerations, and safe failure behavior.
 
-Examples:
+## Replicated Resources
 
-- PlayerRemotes
-- Effects
-- Gems
-- Chests
-- NPC Templates
-- Tutorial Assets
-- Auras
-- Arena Weapons
+`ReplicatedStorage` contains shared resources that both sides need to reference, including:
 
-Responsibilities:
+- remotes;
+- visual assets;
+- templates;
+- effects;
+- cosmetic resources.
 
-- Asset replication
-- Communication channel exposure
-- Shared visual resources
-- Runtime synchronization
-- Cross-layer references
+Shared visibility does not imply shared authority. Sensitive state changes remain server-side.
 
----
+## Design Trade-offs
 
-# Server Responsibilities
+The architecture favors a straightforward Roblox service/module model over a custom networking framework.
 
-Critical gameplay systems remain server-side.
+Benefits:
 
-Examples include:
+- clear trust boundary;
+- direct integration with Roblox replication;
+- simple debugging of request flow;
+- explicit ownership through the player's profile and plot.
 
-- Combat calculations
-- Progression updates
-- Save operations
-- Reward distribution
-- Purchase validation
-- Quest tracking
-- Ownership verification
-- Runtime entity management
+Trade-offs:
 
-Core orchestration modules:
-
-- GameManager
-- CombatDirector
-- CombatSystem
-- GameLoop
-
-Gameplay services:
-
-- QuestService
-- DealerSystem
-- TitleService
-- SoundSystem
-- AnimationSystem
-- EffectSystem
-- MovementSystem
-
-Support systems:
-
-- AnalyticsService
-- DamageNumbersService
-- SafeZone
-
-Responsibilities:
-
-- Validate requests
-- Execute gameplay logic
-- Coordinate progression
-- Maintain runtime consistency
-- Manage persistence
-- Synchronize world state
-
----
-
-# Request Validation
-
-Player requests are validated before modifying gameplay state.
-
-Examples include:
-
-- Purchase validation
-- Upgrade validation
-- Ownership verification
-- Reward verification
-- Quest completion checks
-- Cosmetic equip operations
-
-This approach prevents client manipulation and preserves gameplay consistency.
-
-Examples of protected systems include:
-
-- Progression
-- Economy
-- Inventory ownership
-- Rewards
-- Combat interactions
-
----
-
-# Networking Principles
-
-Idle Boss Fighters follows several networking principles.
-
----
-
-## Presentation Layer
-
-The client is responsible for presentation, user interaction and visual feedback.
-
-Gameplay state ownership remains entirely server-side.
-
-Examples:
-
-- User interfaces
-- Notifications
-- Audio feedback
-- Camera systems
-- Visual indicators
-
----
-
-## Server Authority
-
-Critical operations are executed exclusively on the server.
-
-Examples:
-
-- Purchases
-- Rewards
-- Progression
-- Save operations
-- Combat calculations
-
-This guarantees deterministic gameplay behavior and prevents state inconsistencies.
-
----
-
-## Shared Resources
-
-Shared resources are exposed through a centralized replication layer.
-
-Examples:
-
-- RemoteEvents
-- RemoteFunctions
-- Visual assets
-- Runtime templates
-- Cosmetic resources
-
----
-
-## Bidirectional Communication
-
-Communication occurs through RemoteEvents and RemoteFunctions.
-
-RemoteEvents are primarily used for asynchronous communication.
-
-RemoteFunctions are used for synchronous requests that require an immediate response.
-
-Requests travel from the client layer towards gameplay systems.
-
-Validated responses update the presentation layer.
-
----
-
-# Architectural Benefits
-
-This architecture provides several advantages.
-
-- Separation of responsibilities
-- Scalability
-- Maintainability
-- Runtime consistency
-- Fault tolerance
-- Improved debuggability
-- Reduced coupling between systems
-- Clear ownership boundaries
+- some request handling is coordinated through `GameManager`;
+- validation quality depends on each server handler;
+- the repository contains representative samples rather than every production remote.

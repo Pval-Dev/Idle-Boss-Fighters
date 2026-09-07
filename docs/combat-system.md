@@ -1,299 +1,119 @@
 # Combat System
 
-Idle Boss Fighters implements a modular combat architecture designed around state transitions, combat orchestration, runtime coordination and scalable progression.
+Idle Boss Fighters uses an explicit, state-driven combat flow coordinated by `CombatDirector`.
 
-Combat is executed entirely server-side and follows a deterministic flow to ensure gameplay consistency and progression integrity.
+The combat system is server-side. State transitions and turn order are controlled centrally, while selected mechanics use randomness for target selection, shield formation, and combo activation.
 
 ---
 
-# System Overview
+## Combat Flow
 
 ```mermaid
 flowchart TD
+    Start["Battle start"]
+    Shield["Shield phase"]
+    Core["Core phase"]
+    Victory["Boss defeated"]
+    Defeat["Team defeated"]
+    Timeout["Timer expired"]
+    Reset["Reset / next boss"]
 
-CombatDirector["CombatDirector"]
-
-CombatSystem["CombatSystem"]
-
-Boss["Boss"]
-
-NPC["NPC"]
-
-Action["ActionSystem"]
-
-Movement["MovementSystem"]
-
-Animation["AnimationSystem"]
-
-Effects["EffectSystem"]
-
-Sounds["SoundSystem"]
-
-CombatDirector --> CombatSystem
-
-CombatSystem --> Boss
-
-CombatSystem --> NPC
-
-CombatSystem --> Action
-
-Action --> Movement
-
-Action --> Animation
-
-Action --> Effects
-
-Action --> Sounds
+    Start --> Shield
+    Shield --> Core
+    Shield --> Defeat
+    Shield --> Timeout
+    Core --> Victory
+    Core --> Defeat
+    Core --> Timeout
+    Victory --> Reset
+    Defeat --> Reset
+    Timeout --> Reset
 ```
 
----
+## CombatDirector
 
-# Combat Flow
+`CombatDirector` is the battle orchestrator. Its responsibilities include:
 
-Combat is organized into several phases.
+- shield/core phase selection;
+- turn sequencing;
+- animation synchronization;
+- boss target selection;
+- combo resolution;
+- timeout handling;
+- victory/defeat result creation;
+- runtime reset coordination.
 
-```mermaid
-flowchart TD
+The result object explicitly distinguishes:
 
-Start["Combat Start"]
+- `bossDefeated`;
+- `teamDefeated`;
+- `timeout`.
 
-Shield["Shield Phase"]
+## CombatSystem and ActionSystem
 
-Core["Core Phase"]
+`CombatSystem` owns combat-oriented calculations and runtime interactions.
 
-Victory["Victory"]
+`ActionSystem` coordinates presentation-facing execution such as:
 
-Defeat["Defeat"]
+- movement;
+- animation;
+- effects;
+- sounds.
 
-Reset["Boss Reset"]
+This keeps combat flow separate from the details of how an attack is presented.
 
-Start --> Shield
+## Probabilistic Mechanics
 
-Shield --> Core
+The combat sample uses `math.random()` in several places:
 
-Core --> Victory
+- weighted boss targeting;
+- shield formation activation;
+- dual/triple combo selection.
 
-Core --> Defeat
+For that reason, the battle sequence is **not deterministic**. The predictable part is the state machine and result resolution: given the current state and random outcomes, transitions are explicit and bounded.
 
-Victory --> Reset
+## Shield Phase
 
-Defeat --> Reset
-```
+During the shield phase, damage roles attack their corresponding boss shields. The support/tank character can activate a defensive formation, heal the team, and influence boss targeting through an aggro-derived weight.
 
----
+The phase ends when the boss enters its core state or the battle reaches a terminal condition.
 
-# CombatDirector
+## Core Phase
 
-CombatDirector acts as the primary combat orchestrator.
+When the core is vulnerable, the damage characters can execute:
 
-Responsibilities:
+- single attacks;
+- dual combos;
+- triple combos.
 
-- Control combat state
-- Manage phase transitions
-- Coordinate turn execution
-- Validate combat flow
-- Detect victory conditions
-- Detect defeat conditions
-- Trigger reward distribution
-- Coordinate runtime resets
+Combo chance overflow is converted into additional combo power after configured probability caps, allowing progression investment to remain useful beyond the activation ceiling.
 
-Technical Value:
+## Visual Damage Reconciliation
 
-- Stateful simulation
-- Runtime coordination
-- Centralized combat orchestration
-- Domain separation
+Damage can be applied in several timed visual chunks so the UI and animation feedback feel progressive. At commit time, any remaining residue is applied to preserve the intended total damage amount.
 
----
+This is a presentation synchronization technique, not a separate damage authority: the server remains the source of the final combat state.
 
-# CombatSystem
+## Timeouts
 
-CombatSystem contains gameplay execution logic.
+`RunBattle` tracks elapsed battle time and returns a timeout result when the configured maximum duration is reached.
 
-Responsibilities:
+This provides a bounded exit path for battles that do not reach victory or defeat naturally.
 
-- Damage calculations
-- Critical strikes
-- Combo resolution
-- Damage modifiers
-- Shield interactions
-- Core damage
-- Regeneration
-- Aggro calculations
+## Design Trade-offs
 
-Technical Value:
+The combat design favors readability and explicit orchestration over a highly abstract event-driven model.
 
-- Encapsulated gameplay logic
-- Deterministic calculations
-- Scalable balancing
-- Independent combat execution
+Strengths:
 
----
+- clear phase ownership;
+- explicit terminal states;
+- easy-to-follow turn flow;
+- server-side progression authority;
+- isolated presentation subsystems.
 
-# Boss Architecture
+Trade-offs:
 
-Bosses operate through multiple combat states.
-
-Examples:
-
-- Shield Phase
-- Core Phase
-- Regeneration
-- Reset State
-
-Responsibilities:
-
-- Shield management
-- Core health management
-- State transitions
-- Combat interaction
-
-Technical Value:
-
-- Finite state management
-- Runtime entity control
-- Domain encapsulation
-
----
-
-# NPC Architecture
-
-NPC entities represent combat participants.
-
-Examples:
-
-- Gladiator
-- Brawler
-- ShieldMan
-
-Responsibilities:
-
-- Execute attacks
-- Receive damage
-- Participate in combo systems
-- Support combat phases
-
-Technical Value:
-
-- Runtime entity abstraction
-- Reusable combat objects
-- Modular entity construction
-
----
-
-# ActionSystem
-
-ActionSystem coordinates gameplay execution between independent subsystems.
-
-Responsibilities:
-
-- Trigger movement
-- Trigger animations
-- Trigger sounds
-- Trigger effects
-- Coordinate combat feedback
-
-Connected Systems:
-
-- MovementSystem
-- AnimationSystem
-- EffectSystem
-- SoundSystem
-
-Technical Value:
-
-- Decoupled execution
-- Improved maintainability
-- Reduced subsystem dependencies
-
----
-
-# Combat Principles
-
-Idle Boss Fighters follows several combat principles.
-
----
-
-## State Driven Design
-
-Combat progresses through explicit states.
-
-Examples:
-
-- Shield Phase
-- Core Phase
-- Victory
-- Defeat
-
-Benefits:
-
-- Predictable behavior
-- Easier debugging
-- Reduced complexity
-
----
-
-## Server Authority
-
-Combat calculations remain server-side.
-
-Examples:
-
-- Damage
-- Rewards
-- Progression
-- Combo execution
-- Critical calculations
-
-Benefits:
-
-- Gameplay consistency
-- Cheat prevention
-- Reliable progression
-
----
-
-## Runtime Coordination
-
-Combat systems are synchronized through CombatDirector.
-
-Benefits:
-
-- Centralized control
-- Clear ownership boundaries
-- Easier maintenance
-
----
-
-## Modularity
-
-Combat responsibilities are distributed across independent systems.
-
-Examples:
-
-- CombatDirector
-- CombatSystem
-- ActionSystem
-- MovementSystem
-- AnimationSystem
-- EffectSystem
-- SoundSystem
-
-Benefits:
-
-- Scalability
-- Extensibility
-- Separation of responsibilities
-
----
-
-# Architectural Benefits
-
-The combat architecture provides:
-
-- Deterministic combat flow
-- Independent subsystem execution
-- Centralized orchestration
-- Modular expansion
-- Runtime stability
-- Improved maintainability
+- `CombatDirector` is intentionally central and can grow large;
+- animations and combat timing are coupled through wait-based synchronization;
+- RNG is not injected as a dependency, so deterministic replay/testing is not built into this version.

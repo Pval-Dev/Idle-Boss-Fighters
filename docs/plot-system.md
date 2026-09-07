@@ -1,334 +1,107 @@
-# Plot System
+# Plot and Runtime Ownership
 
-Idle Boss Fighters implements an isolated runtime environment architecture where each player owns an independent gameplay instance.
+Idle Boss Fighters uses a fixed set of Roblox plots to isolate each player's runtime references inside a shared server.
 
-This approach enables progression isolation, deterministic gameplay behavior and simplified runtime management.
+This is a per-player ownership model, not separate server instancing.
 
 ---
 
-# System Overview
+## Allocation Flow
 
 ```mermaid
-flowchart TD
-
-Player["Player"]
-
-Assignment["Plot Assignment"]
-
-Template["Plot Template"]
-
-Plot["Dedicated Plot"]
-
-NPCs["NPC Team"]
-
-Boss["Boss"]
-
-Processor["Processor"]
-
-Pads["Upgrade Pads"]
-
-Leaderboards["Leaderboards"]
-
-Player --> Assignment
-
-Assignment --> Template
-
-Template --> Plot
-
-Plot --> NPCs
-
-Plot --> Boss
-
-Plot --> Processor
-
-Plot --> Pads
-
-Plot --> Leaderboards
+flowchart LR
+    Join["Player joins"] --> Find["Find unclaimed plot"]
+    Find --> Claim["Set Claimed + OwnerId"]
+    Claim --> Runtime["Initialize player runtime"]
+    Runtime --> Release["Player leaves"]
+    Release --> Free["Clear ownership"]
 ```
 
----
+## PlotManager
 
-# Runtime Instancing
+`PlotManager.AssignPlot` iterates through `workspace.Plots` and assigns the first unclaimed plot.
 
-Every player receives an isolated gameplay environment.
+Ownership is stored using attributes:
 
-Each plot contains all systems required for progression.
+- `Claimed`;
+- `OwnerId`.
 
-Examples:
+The same manager provides:
 
-- NPC team
-- Boss entity
-- Upgrade pads
-- Gem spawners
-- Processor
-- Cosmetic dealers
-- Statistics references
+- player → plot lookup;
+- part → plot resolution;
+- spawn lookup;
+- ownership release.
 
-Benefits:
+## Why Explicit Ownership Helps
 
-- Independent progression
-- Reduced synchronization complexity
-- Predictable runtime behavior
-- Better scalability
+Many systems need to answer the same question:
 
----
+```text
+Which player owns this runtime object?
+```
 
-# Plot Assignment
+Using the plot as an ownership boundary simplifies:
 
-Plots are dynamically assigned when players enter the experience.
+- reward routing;
+- NPC/boss references;
+- interaction checks;
+- progression scope;
+- cleanup when a player leaves.
 
-Responsibilities:
+## Runtime Contents
 
-- Detect available plots
-- Reserve ownership
-- Initialize runtime systems
-- Connect progression data
-- Synchronize player references
+A player plot can contain references such as:
 
-Technical Value:
+- NPC team;
+- boss;
+- processor;
+- upgrade pads;
+- gem/reward objects;
+- dealers;
+- spawn points;
+- local display/leaderboard objects.
 
-- Runtime ownership model
-- Dynamic allocation
-- World partitioning
+The portfolio sample focuses on ownership and lookup rather than plot construction.
 
----
+## Capacity Boundary
 
-# Plot Template
+Because plots are preconfigured and assigned from a finite folder, concurrent capacity per Roblox server is bounded by the number of available plots.
 
-PlotTemplate acts as the blueprint for player environments.
+This is an intentional and important architectural constraint. The model simplifies ownership but does not dynamically create unlimited runtime environments.
 
-Contained systems include:
+## Runtime Recovery
 
-- NPC placeholders
-- Boss location
-- Processor
-- Upgrade stations
-- Dealer locations
-- Spawn points
-- Reward areas
+The project contains two targeted recovery mechanisms:
 
-Responsibilities:
+### Missing entity guard
 
-- Standardize world creation
-- Simplify initialization
-- Support future expansions
+`GameManager` periodically checks required NPC and boss references. Missing entities can be reconstructed from their domain builders and current player progression state.
 
-Technical Value:
+### SafeZone
 
-- Template driven architecture
-- Reusable runtime environments
-- Reduced initialization complexity
+`SafeZone` checks the distance between active models and known default positions. Models that leave the allowed radius are:
 
----
+- moved back to a recovery position;
+- stripped of accumulated linear/angular velocity;
+- returned from `PlatformStand`;
+- unanchored where required.
 
-# Runtime Ownership
+These mechanisms address common physics/runtime anomalies inside a plot.
 
-Each plot belongs exclusively to a single player.
+## Design Trade-offs
 
-Ownership determines:
+Strengths:
 
-- Combat authority
-- Reward ownership
-- Progression state
-- NPC references
-- Economy references
+- explicit ownership boundary;
+- simple player/resource lookup;
+- reduced cross-player reference ambiguity;
+- predictable cleanup;
+- recovery can remain scoped to one player's runtime.
 
-Benefits:
+Trade-offs:
 
-- Progression isolation
-- Clear resource boundaries
-- Reduced runtime conflicts
-
----
-
-# NPC Runtime Management
-
-NPCHandler maintains runtime references for all active entities.
-
-Responsibilities:
-
-- Track NPC state
-- Validate NPC existence
-- Reposition entities
-- Restore invalid positions
-- Maintain combat references
-
-Technical Value:
-
-- Runtime entity management
-- Fault tolerance
-- Recovery systems
-
----
-
-# Boss Runtime
-
-Boss entities are instantiated inside player plots.
-
-Responsibilities:
-
-- Manage combat lifecycle
-- Handle combat states
-- Maintain health state
-- Coordinate progression
-- Trigger rewards
-
-Technical Value:
-
-- Isolated boss instances
-- Stateful runtime entities
-- Controlled progression
-
----
-
-# Progression Isolation
-
-Plot architecture guarantees that progression remains independent.
-
-Examples:
-
-- Currency
-- Boss level
-- NPC upgrades
-- Cosmetics
-- Quest progress
-- Rewards
-
-Benefits:
-
-- Consistent progression
-- Simplified persistence
-- Predictable save behavior
-
----
-
-# Runtime Synchronization
-
-Gameplay systems synchronize through player ownership.
-
-Examples:
-
-Combat
-
-↓
-
-Rewards
-
-↓
-
-Economy
-
-↓
-
-Progression
-
-↓
-
-Plot State
-
-Responsibilities:
-
-- Maintain consistency
-- Coordinate gameplay systems
-- Update world entities
-- Reflect progression changes
-
----
-
-# Fault Tolerance
-
-Runtime validation mechanisms exist to recover from anomalies.
-
-Examples:
-
-- SafeZone
-- NPC recovery
-- Position validation
-- Entity restoration
-
-Benefits:
-
-- Runtime stability
-- Reduced gameplay interruptions
-- Improved reliability
-
----
-
-# Architectural Principles
-
-Idle Boss Fighters follows several world management principles.
-
----
-
-## World Isolation
-
-Each player owns an independent environment.
-
-Benefits:
-
-- Reduced complexity
-- Improved scalability
-- Easier maintenance
-
----
-
-## Ownership Boundaries
-
-Resources belong to explicit owners.
-
-Examples:
-
-- Rewards
-- NPCs
-- Bosses
-- Progression state
-
-Benefits:
-
-- Clear system responsibilities
-- Easier debugging
-- Reduced conflicts
-
----
-
-## Template Driven Design
-
-Plots are generated from predefined structures.
-
-Benefits:
-
-- Reusability
-- Standardization
-- Faster iteration
-
----
-
-## Runtime Validation
-
-Entities are continuously monitored.
-
-Examples:
-
-- NPC validation
-- Recovery systems
-- Position checks
-
-Benefits:
-
-- Fault tolerance
-- Runtime consistency
-- Improved stability
-
----
-
-# Architectural Benefits
-
-The plot architecture provides:
-
-- Runtime isolation
-- Ownership clarity
-- Simplified persistence
-- Improved scalability
-- Reduced synchronization issues
-- Reusable environments
-- Better maintainability
+- fixed plot count limits concurrency;
+- linear plot scans are simple but not optimized for very large plot sets;
+- recovery loops poll on intervals rather than reacting to a central health/event system;
+- all plots still share one Roblox server process.

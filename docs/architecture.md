@@ -1,288 +1,140 @@
 # Architecture
 
-Idle Boss Fighters follows a modular server-authoritative architecture designed around separation of responsibilities, scalability, maintainability, and fault tolerance.
+Idle Boss Fighters uses a server-authoritative Roblox architecture with three main concerns: client presentation, authoritative gameplay orchestration, and per-player runtime state backed by persistent player profiles.
 
-The project is structured into multiple layers responsible for gameplay orchestration, world simulation, persistence, networking, and client interaction.
+This document describes the implemented boundaries and their trade-offs. The project is a Roblox game architecture, not distributed backend infrastructure.
 
 ---
 
-# Architectural Overview
+## System Overview
 
 ```mermaid
 flowchart TD
+    Client["Client UI / LocalScripts"]
+    Remote["RemoteEvents / RemoteFunctions"]
+    Server["Server orchestration & gameplay services"]
+    Plot["Per-player plot runtime"]
+    Data["PlayerData"]
+    Store["Roblox DataStoreService"]
 
-Client["Client Layer\nUI + LocalScripts"]
-
-Network["Replication Layer\nRemoteEvents + Shared Resources"]
-
-Server["Server Layer\nServices + Systems"]
-
-World["Runtime Layer\nPlots + NPCs + Bosses"]
-
-Persistence["Persistence Layer\nPlayerData + Config"]
-
-Client --> Network
-
-Network --> Server
-
-Server --> World
-
-Server --> Persistence
+    Client --> Remote
+    Remote --> Server
+    Server --> Plot
+    Server --> Data
+    Data --> Store
 ```
 
----
+## Client Layer
 
-# Client Layer
+The client is responsible for presentation and interaction:
 
-The client layer is responsible for player interaction, interface rendering, visual feedback, and local presentation.
+- HUD and inventory interfaces;
+- tutorials and notifications;
+- cosmetic and quest UI;
+- local visual/audio feedback;
+- camera and control behavior.
 
-Components:
+The client can request actions, but authoritative persistent state is modified by server-side systems.
 
-- HUD
-- Tutorial
-- Dealers Interface
-- Inventory
-- Aura Interfaces
-- Quests UI
-- Boost HUD
-- ArenaClient
-- GemNotificationListener
-- DeathScreen
+## Communication Boundary
 
-Responsibilities:
+`RemoteEvents` and `RemoteFunctions` expose the client/server boundary.
 
-- Handle user input
-- Present gameplay information
-- Trigger client requests
-- Display visual feedback
-- Manage local effects
+Typical flow:
 
----
-
-# Replication Layer
-
-Shared resources are centralized inside ReplicatedStorage.
-
-Main resources:
-
-- PlayerRemotes
-- Effects
-- Gems
-- NPC Templates
-- Auras
-- Tutorial Assets
-- Arena Weapons
-- PlayerAuras
-
-Responsibilities:
-
-- Shared assets distribution
-- Client-server communication
-- Replicated visual content
-- Runtime synchronization
-
----
-
-# Server Layer
-
-The server owns all gameplay authority.
-
-Core modules:
-
-- GameManager
-- GameLoop
-- CombatDirector
-- CombatSystem
-
-Gameplay systems:
-
-- ActionSystem
-- AnimationSystem
-- EffectSystem
-- SoundSystem
-- MovementSystem
-- DealerSystem
-- QuestService
-- TitleService
-
-Support services:
-
-- AnalyticsService
-- SafeZone
-- DamageNumbersService
-
-Responsibilities:
-
-- Validate gameplay actions
-- Execute combat logic
-- Progress player economy
-- Manage runtime systems
-- Spawn rewards
-- Handle progression
-- Process purchases
-- Coordinate save operations
-
----
-
-# Runtime Layer
-
-Each player receives a dedicated gameplay environment.
-
-```mermaid
-flowchart TD
-
-Player["Player"]
-
-PlotManager["Plot Assignment"]
-
-Plot["Dedicated Plot"]
-
-NPCs["NPC Team"]
-
-Boss["Boss"]
-
-Processor["Processor"]
-
-Pads["Upgrade Pads"]
-
-Leaderboards["Leaderboards"]
-
-Player --> PlotManager
-
-PlotManager --> Plot
-
-Plot --> NPCs
-
-Plot --> Boss
-
-Plot --> Processor
-
-Plot --> Pads
-
-Plot --> Leaderboards
+```text
+UI interaction
+→ LocalScript
+→ RemoteEvent / RemoteFunction
+→ server validation
+→ gameplay service
+→ authoritative state change
+→ replicated/presentation update
 ```
 
-Responsibilities:
+This design reduces the amount of progression state that must be trusted from the client.
 
-- Runtime entity ownership
-- World synchronization
-- Spatial isolation
-- Player progression management
-- Boss lifecycle management
+## Server Orchestration
 
----
+`GameManager` coordinates several lifecycle concerns:
 
-# Persistence Layer
+- plot assignment and release;
+- profile loading and saving;
+- battle-loop startup;
+- processor and HUD loops;
+- runtime entity recovery;
+- selected remote handlers;
+- shutdown persistence.
 
-Persistent data is centralized around PlayerData.
+This central coordinator makes system startup and ownership easy to reason about, but it is also a coupling point. A larger version of the project would benefit from splitting persistence, session lifecycle, and remote request handling into smaller services.
 
-Components:
+## Gameplay Systems
 
-- PlayerData
-- Config
-- QuestConfig
-- TitleConfig
-- AnimationData
-- EffectData
-- SoundData
-- AuraData
+Gameplay responsibilities are separated into modules such as:
 
-Responsibilities:
+- `CombatDirector` — combat phases and turn orchestration;
+- `CombatSystem` — combat calculations and runtime interactions;
+- `ActionSystem` — coordination of movement, animation, sound, and effects;
+- `QuestService` — quest state and rewards;
+- `DealerSystem` — rotating cosmetic offers and purchases;
+- `TitleService` — title progression;
+- `BigNum` — extended-range economy values.
 
-- Serialization
-- Deserialization
-- Autosave
-- Statistics persistence
-- Economy persistence
-- Cosmetic ownership
-- Player progression storage
+The separation is practical rather than framework-heavy: modules communicate directly where the game needs tight runtime coordination.
 
----
+## Per-Player Runtime Ownership
 
-# Architectural Principles
+The world is divided into preconfigured plots. `PlotManager` assigns an unclaimed plot to a joining player and records ownership through attributes.
 
-Idle Boss Fighters follows several software engineering principles.
+Each plot acts as the scope for:
 
-## Separation of Responsibilities
+- the player's NPC team;
+- boss runtime;
+- processor;
+- upgrade stations;
+- reward objects;
+- cosmetic/dealer references.
 
-Systems are isolated according to their domain.
+This reduces cross-player reference ambiguity and makes ownership checks easier.
 
-Examples:
+It is important to distinguish this from server instancing: all plots still exist inside the same Roblox server, and the number of concurrent player environments is bounded by the number of available plots.
 
-CombatDirector
+## Persistence
 
-Responsible for battle phases.
+`PlayerData` is the persistent profile model. It contains economy, combat progression, cosmetics, quests, titles, boosts, tutorial state, and related runtime values.
 
-QuestService
+Serialization converts custom runtime values such as `BigNum` into plain tables suitable for DataStore storage.
 
-Responsible for progression objectives.
+`GameManager` handles:
 
-DealerSystem
+- retrying reads/writes;
+- save throttling;
+- forced saves on leave;
+- shutdown save attempts;
+- offline progression calculation after loading.
 
-Responsible for cosmetic rotation.
+The sample code demonstrates the persistence boundary but is not a complete production-grade persistence framework.
 
-BigNum
+## Defensive Runtime Recovery
 
-Responsible for scalable numerical operations.
+The project contains targeted recovery guards for common Roblox runtime problems:
 
-AnalyticsService
+- recreating missing NPC/boss entities;
+- checking position bounds;
+- clearing accumulated physics velocity;
+- returning models to known-safe plot positions.
 
-Responsible for gameplay telemetry.
+These are application-level recovery mechanisms. They should not be interpreted as general fault-tolerance or high-availability guarantees.
 
----
+## Architectural Summary
 
-## Server Authority
+The architecture emphasizes:
 
-Critical gameplay decisions remain server-side.
+- server authority over progression;
+- explicit player ownership boundaries;
+- modular gameplay responsibilities;
+- persistent player profiles;
+- data-driven balancing;
+- targeted runtime recovery.
 
-Examples:
-
-- Purchases
-- Combat
-- Reward distribution
-- Progression updates
-- Save operations
-
-This prevents client manipulation and guarantees gameplay consistency.
-
----
-
-## Data Driven Design
-
-Most balancing values are centralized inside Config.
-
-Examples:
-
-- Upgrade costs
-- Scaling curves
-- Reward multipliers
-- Combat parameters
-- Quest requirements
-
-This approach simplifies balancing and iteration.
-
----
-
-## Fault Tolerance
-
-Recovery systems exist to mitigate runtime anomalies.
-
-Examples:
-
-- SafeZone
-- Runtime validation
-- NPC repositioning
-- Recovery mechanisms
-
----
-
-## Scalability
-
-Progression systems are designed for indefinite growth.
-
-Examples:
-
-- BigNum
-- Config driven scaling
-- Modular gameplay services
-- Persistent progression systems
+The main trade-off is a deliberately centralized orchestration layer combined with platform-specific persistence and runtime assumptions.

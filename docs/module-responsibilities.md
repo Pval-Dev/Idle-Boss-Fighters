@@ -1,75 +1,78 @@
-
 # Module Responsibilities
 
-This document describes the main systems used in Idle Boss Fighters and their technical responsibility inside the project architecture.
+This page maps the major Idle Boss Fighters components to their primary responsibilities. It reflects the architecture shown by the portfolio samples; the full production place contains additional assets and scripts.
 
 ## Core Orchestration
 
-| Component | Type | Responsibility | Technical Value |
-|---|---|---|---|
-| GameManager | Main orchestrator | Coordinates player lifecycle, data loading/saving, plot assignment, purchase validation, system initialization and global event handling. | Centralized orchestration layer |
-| GameLoop | Runtime loop | Coordinates recurring gameplay processes such as economy progression, combat updates and timed systems. | Continuous runtime coordination |
-| CombatDirector | Combat orchestrator | Controls combat phases, turn order, boss shield/core transitions, combos, victory and defeat flow. | Stateful gameplay simulation |
-| CombatSystem | Combat module | Executes combat calculations and connects combat logic with runtime entities. | Encapsulated combat logic |
+| Component | Role | Main responsibility |
+|---|---|---|
+| `GameManager` | Session/runtime coordinator | Player lifecycle, profile load/save, plot assignment, runtime loop startup, selected remote handlers, shutdown persistence |
+| `GameLoop` | Runtime gameplay loop | Recurring combat/economy coordination and shared runtime updates |
+| `CombatDirector` | Combat orchestrator | Shield/core phases, turn order, combo resolution, timeout and terminal-state flow |
+| `CombatSystem` | Combat logic | Damage-oriented calculations and interactions with runtime combat entities |
 
-## Data & Configuration
+## Data and Configuration
 
-| Component | Type | Responsibility | Technical Value |
-|---|---|---|---|
-| PlayerData | Data model | Defines persistent player statistics, economy, inventory, unlocks and progression state. | Persistent player profile model |
-| Config | Configuration layer | Centralizes balance values, economy parameters, combat tuning and system constants. | Single source of configuration |
-| AnimationData | Data module | Stores animation references used by gameplay systems. | Data-driven animation setup |
-| EffectData | Data module | Stores visual effect references and configuration. | Data-driven effect management |
-| AuraData | Data module | Defines aura cosmetics and related metadata. | Cosmetic configuration layer |
-| SoundData | Data module | Stores sound references used by sound systems. | Data-driven audio configuration |
-| QuestConfig | Configuration module | Defines quest requirements, rewards and progression rules. | Retention system configuration |
-| TitleConfig | Configuration module | Defines unlockable player titles and related metadata. | Cosmetic progression configuration |
+| Component | Role | Main responsibility |
+|---|---|---|
+| `PlayerData` | Persistent profile model | Economy, combat stats, cosmetics, quests, titles, boosts, tutorial state, serialization/deserialization |
+| `Config` | Balance/configuration layer | Upgrade costs, progression formulas, boss tuning, reward ratios, constants |
+| `AnimationData` | Data module | Animation references |
+| `EffectData` | Data module | Visual-effect references/configuration |
+| `AuraData` | Data module | Aura metadata and modifiers |
+| `SoundData` | Data module | Sound references |
+| `QuestConfig` | Configuration module | Quest requirements and rewards |
+| `TitleConfig` | Configuration module | Title unlock metadata |
 
-## Gameplay Systems
+## Gameplay Services
 
-| Component | Type | Responsibility | Technical Value |
-|---|---|---|---|
-| ActionSystem | Gameplay system | Coordinates high-level actions between combat, animation, movement, sound and effects. | Separates action execution from individual subsystems |
-| AnimationSystem | Gameplay system | Handles animation playback for NPCs, bosses and combat actions. | Isolated animation responsibility |
-| EffectSystem | Gameplay system | Spawns and manages visual effects during combat and progression events. | Isolated visual feedback layer |
-| SoundSystem | Gameplay system | Plays sound feedback for attacks, UI and world events. | Isolated audio feedback layer |
-| MovementSystem | Gameplay system | Handles movement logic used during combat actions and positioning. | Controlled runtime movement |
-| DealerSystem | Gameplay system | Manages rotating cosmetic dealers, skin/aura availability and purchase flow. | Cosmetic and monetization-oriented system |
-| QuestService | Gameplay service | Tracks quest progress, completion and rewards. | Player retention and progression layer |
-| TitleService | Gameplay service | Manages title unlocks, active title state and player display titles. | Cosmetic achievement system |
+| Component | Role | Main responsibility |
+|---|---|---|
+| `ActionSystem` | Action coordinator | Coordinates movement, animation, effects, and sound for high-level actions |
+| `AnimationSystem` | Presentation subsystem | Animation playback |
+| `EffectSystem` | Presentation subsystem | Runtime visual effects |
+| `SoundSystem` | Presentation subsystem | Audio feedback |
+| `MovementSystem` | Runtime subsystem | Combat movement and positioning |
+| `DealerSystem` | Cosmetic economy | Rotating cosmetic offers and purchase flow |
+| `QuestService` | Progression service | Quest state, progress, completion, and rewards |
+| `TitleService` | Progression/cosmetic service | Title unlocks and active title state |
 
-## Economy & Progression
+## Economy and Progression
 
-| Component | Type | Responsibility | Technical Value |
-|---|---|---|---|
-| GemSpawner | Economy module | Spawns gems as rewards during the progression loop. | Reward generation system |
-| ChestSystem | Economy module | Handles chest reward opportunities and random reward spawning. | Chance-based reward layer |
-| BigNum | Utility / numeric system | Represents, formats and serializes very large progression values. | Scalable incremental economy support |
-| Processor Flow | Internal gameplay loop | Converts collected gems into claimable money over time. | Controlled economy pacing |
-| Upgrade Flow | Internal progression system | Converts player money into permanent stat progression. | Long-term progression loop |
+| Component | Role | Main responsibility |
+|---|---|---|
+| `GemSpawner` | Reward runtime | Materializes gem rewards in the player's plot |
+| `ChestSystem` | Reward system | Chance-based chest rewards |
+| `BigNum` | Numeric utility | Extended-range representation, arithmetic, serialization, and formatting |
+| Processor flow | Economy loop | Converts collected gems into claimable currency |
+| Upgrade flow | Progression loop | Converts currency into permanent stat upgrades |
 
-## World Runtime
+## Runtime Ownership
 
-| Component | Type | Responsibility | Technical Value |
-|---|---|---|---|
-| PlotManager | World management system | Assigns and manages isolated player plots. | Per-player runtime world isolation |
-| NPCHandler | Runtime world handler | Maintains server-side NPC state and world references. | Runtime entity management |
-| NPC | Domain class / builder | Builds NPC data, statistics and behavior references. | Encapsulated NPC construction |
-| Boss | Domain class / builder | Builds boss data, statistics, shield/core state and boss-specific behavior. | Encapsulated boss construction |
-| StatsLeaderboard | World system | Updates and displays global player progression statistics. | Competitive progression visibility |
+| Component | Role | Main responsibility |
+|---|---|---|
+| `PlotManager` | Ownership manager | Assigns/releases plots and resolves plot ownership |
+| `NPCHandler` | Runtime entity handler | Maintains NPC references/state |
+| `NPC` | Domain/runtime object | NPC statistics and runtime construction |
+| `Boss` | Domain/runtime object | Boss statistics, shield/core state, and runtime construction |
+| `SafeZone` | Recovery guard | Repositions entities that leave configured plot bounds |
 
-## Networking & Observers
+## Networking
 
-| Component | Type | Responsibility | Technical Value |
-|---|---|---|---|
-| PlayerRemotes | Remote communication layer | Provides RemoteEvents and RemoteFunctions for client-server communication. | Network boundary between UI and server logic |
-| Client LocalScripts | Client-side controllers | Handles UI interaction, visual feedback and client requests to the server. | Client presentation layer |
-| Server Listeners | Internal subsystem | Listens to client requests, validates actions and forwards them to server systems. | Server-authoritative request handling |
+| Component | Role | Main responsibility |
+|---|---|---|
+| `PlayerRemotes` | Communication boundary | RemoteEvents and RemoteFunctions shared with clients |
+| Client `LocalScripts` | Presentation/controllers | UI interaction and client requests |
+| Server remote handlers | Authority boundary | Resolve player state, validate requests, and call server-side systems |
 
-## Utilities & Fault Tolerance
+## Analytics
 
-| Component | Type | Responsibility | Technical Value |
-|---|---|---|---|
-| SafeZone | Fault tolerance helper | Recovers NPCs when physics or runtime errors move them outside valid areas. | Runtime error tolerance |
-| DamageNumbersService | Visual helper | Displays floating damage numbers during combat. | Non-critical visual feedback layer |
-| AnalyticsService | Analytics helper | Tracks gameplay flow, player behavior and session-related data. | Product validation and telemetry support |
+| Component | Role | Main responsibility |
+|---|---|---|
+| `AnalyticsService` | Session telemetry | Tracks active sessions, duration, bounded session history, and aggregate session totals |
+
+The analytics sample uses a separate DataStore from gameplay progression so telemetry concerns do not need to live inside `PlayerData`.
+
+## Architectural Notes
+
+`GameManager` is intentionally a broad coordinator in this version. That made lifecycle sequencing straightforward during development, but it also creates a natural refactoring boundary. In a larger service-oriented version, persistence, remote handling, player sessions, and runtime health checks could be split into smaller modules with narrower dependencies.

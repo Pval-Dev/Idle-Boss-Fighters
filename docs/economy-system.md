@@ -1,384 +1,127 @@
-# Economy System
+# Economy and Progression
 
-Idle Boss Fighters implements an incremental progression economy designed around resource acquisition, processing, permanent upgrades and indefinite scalability.
-
-The economy is entirely server-authoritative and serves as the primary driver of long-term progression.
+Idle Boss Fighters is built around an incremental economy loop in which combat rewards are converted into permanent progression.
 
 ---
 
-# System Overview
+## Progression Loop
 
 ```mermaid
-flowchart TD
-
-Combat["Combat"]
-
-Rewards["Reward Generation"]
-
-GemSpawner["GemSpawner"]
-
-Processor["Processor"]
-
-Money["Player Economy"]
-
-Upgrades["Progression Systems"]
-
-Stats["Character Statistics"]
-
-Combat --> Rewards
-
-Rewards --> GemSpawner
-
-GemSpawner --> Processor
-
-Processor --> Money
-
-Money --> Upgrades
-
-Upgrades --> Stats
-
-Stats --> Combat
+flowchart LR
+    Boss["Boss combat"] --> Gems["Gem rewards"]
+    Gems --> Processor["Processing queue"]
+    Processor --> Money["Claimable currency"]
+    Money --> Upgrades["Permanent upgrades"]
+    Upgrades --> Stats["Combat / economy stats"]
+    Stats --> Boss
 ```
 
----
+## Resource Processing
 
-# Progression Loop
+The processor creates an intermediate stage between collecting rewards and receiving spendable currency.
 
-Idle Boss Fighters follows a cyclical progression loop.
+`PlayerData` tracks:
 
-```mermaid
-flowchart TD
+- gems in the backpack;
+- gems in the processor;
+- the processing queue;
+- unclaimed money;
+- spendable money.
 
-Boss["Boss"]
+Processing speed, boosts, gamepasses, and multipliers affect how quickly or efficiently resources move through the loop.
 
-Defeat["Boss Defeated"]
+## Upgrade Model
 
-Gems["Gem Rewards"]
+Currency is converted into persistent upgrade counts. Effective levels are derived from configurable step counts and then resolved through stat formulas.
 
-Processing["Resource Processing"]
+This separates:
 
-Currency["Money"]
-
-Upgrades["Upgrades"]
-
-Power["Team Strength"]
-
-Boss --> Defeat
-
-Defeat --> Gems
-
-Gems --> Processing
-
-Processing --> Currency
-
-Currency --> Upgrades
-
-Upgrades --> Power
-
-Power --> Boss
+```text
+raw upgrade purchases
+→ effective level
+→ configured formula
+→ final gameplay stat
 ```
 
----
+Cosmetic bonuses and temporary multipliers can then modify the resolved value.
 
-# Economy Principles
+## BigNum
 
-The economy follows several design principles.
+The project uses a custom mantissa/exponent structure for values that exceed ordinary floating-point magnitude:
 
-Examples:
+```text
+mantissa × 10^exponent
+```
 
-- Permanent progression
-- Exponential growth
-- Reward feedback
-- Continuous engagement
-- Infinite scalability
+The implementation supports:
 
-Benefits:
+- construction from numbers/scientific-notation strings;
+- normalization;
+- addition and subtraction;
+- multiplication and division;
+- exponentiation;
+- comparisons;
+- serialization;
+- UI formatting.
 
-- Long-term retention
-- Meaningful progression
-- Repeatable gameplay loop
-- Incremental satisfaction
+### Important numerical boundary
 
----
+`BigNum` is an **extended-range progression type**, not arbitrary-precision arithmetic.
 
-# GemSpawner
+It stores the mantissa as a normal Roblox number and intentionally ignores additions where exponent distance is large enough to make the smaller value insignificant for the game's purposes.
 
-GemSpawner is responsible for reward instantiation.
+It is designed primarily for non-negative incremental values such as:
 
-Responsibilities:
+- currency;
+- damage;
+- health;
+- upgrade costs;
+- reward quantities.
 
-- Generate rewards
-- Spawn collectible resources
-- Determine quantities
-- Coordinate visual representation
+## Persistence
 
-Technical Value:
+Economy state is serialized as part of `PlayerData`, including custom `BigNum` values converted to plain `{m, e}` tables.
 
-- Reward generation system
-- Runtime object management
-- Controlled progression pacing
+Deserialization restores missing fields with defaults to maintain compatibility with older profile shapes.
 
----
+## Offline Progression
 
-# Processor System
+When a player returns after being offline, the profile can estimate an offline reward based on:
 
-The processor acts as an intermediary stage between resource acquisition and permanent progression.
+- elapsed offline time;
+- current boss level;
+- boss-health scaling;
+- reward ratios;
+- progression multipliers.
 
-Responsibilities:
+This is an estimate rather than a simulation of every missed battle.
 
-- Receive collected resources
-- Convert resources into claimable currency
-- Apply processing modifiers
-- Support automation systems
+## Data-Driven Balancing
 
-Technical Value:
+Progression formulas and constants live behind configuration modules rather than being spread throughout the runtime flow.
 
-- Economy pacing mechanism
-- Progression control layer
-- Resource transformation system
+Typical configuration concerns include:
 
----
+- boss scaling;
+- upgrade costs;
+- stat formulas;
+- reward ratios;
+- processor speeds;
+- multiplier values.
 
-# Upgrade Systems
+## Design Trade-offs
 
-Progression is achieved through permanent upgrades.
+Strengths:
 
-Examples:
+- one consistent large-number abstraction across the economy;
+- persistent progression;
+- configurable formulas;
+- explicit processing stages;
+- compatibility defaults for profile evolution.
 
-- Damage upgrades
-- Health upgrades
-- Processor upgrades
-- Critical systems
-- Combo systems
-- Efficiency upgrades
+Trade-offs:
 
-Responsibilities:
-
-- Consume player currency
-- Increase combat performance
-- Scale progression
-- Extend gameplay longevity
-
-Technical Value:
-
-- Persistent progression
-- Configurable balancing
-- Controlled scaling
-
----
-
-# BigNum Integration
-
-Idle Boss Fighters uses BigNum to support indefinite progression.
-
-Responsibilities:
-
-- Represent large values
-- Format numerical output
-- Serialize progression state
-- Maintain scalability
-
-Examples:
-
-- Damage values
-- Currency
-- Upgrade costs
-- Resource quantities
-
-Technical Value:
-
-- Infinite progression support
-- Numerical abstraction
-- Economy scalability
-
----
-
-# Reward Systems
-
-Reward generation occurs through multiple mechanisms.
-
-Examples:
-
-- Boss rewards
-- GemSpawner
-- ChestSystem
-- Multipliers
-- Gamepasses
-- Boost systems
-
-Responsibilities:
-
-- Increase engagement
-- Support monetization
-- Encourage progression
-- Reward investment
-
-Technical Value:
-
-- Retention mechanics
-- Flexible reward architecture
-- Scalable reward distribution
-
----
-
-# Data Integration
-
-Economy systems are persisted through PlayerData.
-
-Stored information includes:
-
-- Currency
-- Gems
-- Multipliers
-- Upgrade levels
-- Owned rewards
-- Progression statistics
-
-Responsibilities:
-
-- Save progression
-- Restore progression
-- Maintain economy integrity
-
-Technical Value:
-
-- Persistent economy model
-- Reliable progression tracking
-- Runtime recovery
-
----
-
-# Configuration Driven Design
-
-Economy balancing is centralized through Config.
-
-Examples:
-
-- Scaling curves
-- Reward values
-- Upgrade costs
-- Processing rates
-- Multipliers
-
-Benefits:
-
-- Easier balancing
-- Faster iteration
-- Reduced hardcoding
-- Improved maintainability
-
----
-
-# Economy Principles
-
-Idle Boss Fighters follows several economy design principles.
-
----
-
-## Infinite Progression
-
-Players are never expected to reach a definitive endpoint.
-
-Progression systems are designed to scale indefinitely.
-
-Examples:
-
-- BigNum
-- Scaling upgrades
-- Reward multipliers
-
-Benefits:
-
-- Extended retention
-- Long-term objectives
-- Continuous engagement
-
----
-
-## Server Authority
-
-Economy modifications remain server-side.
-
-Examples:
-
-- Purchases
-- Currency changes
-- Rewards
-- Processing
-- Progression
-
-Benefits:
-
-- Economy consistency
-- Progression integrity
-- Reduced exploitation opportunities
-
----
-
-## Modularity
-
-Economy systems remain isolated.
-
-Examples:
-
-- GemSpawner
-- Processor
-- BigNum
-- ChestSystem
-- Upgrade Systems
-
-Benefits:
-
-- Easier maintenance
-- Independent balancing
-- Extensible architecture
-
----
-
-## Feedback Loops
-
-Economy progression continuously reinforces gameplay.
-
-Examples:
-
-Combat
-
-↓
-
-Rewards
-
-↓
-
-Currency
-
-↓
-
-Upgrades
-
-↓
-
-Power
-
-↓
-
-Combat
-
-Benefits:
-
-- Positive reinforcement
-- Continuous progression
-- Strong retention patterns
-
----
-
-# Architectural Benefits
-
-The economy architecture provides:
-
-- Infinite scalability
-- Configurable balancing
-- Persistent progression
-- Controlled pacing
-- Modular expansion
-- Runtime consistency
-- Maintainable progression systems
+- large exponent gaps sacrifice insignificant precision by design;
+- the sample does not provide arbitrary-precision math;
+- several gameplay services are referenced but omitted from the portfolio repository;
+- balancing remains game-specific rather than a generic economy framework.
